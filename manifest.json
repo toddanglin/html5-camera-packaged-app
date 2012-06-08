@@ -1,0 +1,32 @@
+{
+ "name": "HTML5 Camera",
+ "description": "Test",
+ "version": "1.0",
+ "manifest_version": 2,
+ "offline_enabled" : true,
+ "platform_app": true,
+ "background": {
+    "scripts": ["background.js"]
+ },
+ "icons": {
+   "16": "icon_16.png",
+   "128": "icon_128.png"
+ },
+ "permissions": [
+   "experimental",
+   "windows",
+   "unlimitedStorage"
+ ],
+ "intents": {
+    "http://webintents.org/pick": [
+      {
+        "type": ["image/*"],
+        "href": "main.html",
+        "title" : "Take Picture With HTML5 Camera",
+        "disposition" : "window"
+      }]
+  },
+  "sandboxed_pages": {
+    "pages": [ "index.html" ]
+  }
+}
