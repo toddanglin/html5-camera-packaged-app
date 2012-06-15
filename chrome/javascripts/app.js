@@ -36,11 +36,15 @@
     };
     return pub = {
       init: function() {
+        utils.init();
         postman.init(iframe);
         file.init();
-        return navigator.webkitGetUserMedia({
-          video: true
-        }, hollaback, errback);
+        return $.subscribe("/app/ready", function() {
+          $.publish("/file/read", []);
+          return navigator.webkitGetUserMedia({
+            video: true
+          }, hollaback, errback);
+        });
       }
     };
   });

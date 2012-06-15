@@ -3778,11 +3778,12 @@ define("mylibs/utils/BlobBuilder.min", function(){});
 (function() {
 
   define('mylibs/file/file',['jQuery', 'Kendo', 'mylibs/utils/utils'], function($, kendo, utils) {
-    var blobBuiler, compare, errorHandler, fileSystem, myPicturesDir, pub;
+    var blobBuiler, compare, errorHandler, fileSystem, isApp, myPicturesDir, pub;
     window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
     fileSystem = {};
     myPicturesDir = {};
     blobBuiler = {};
+    isApp = false;
     compare = function(a, b) {
       if (a.name < b.name) return -1;
       if (a.name > b.name) return 1;
@@ -3816,6 +3817,7 @@ define("mylibs/utils/BlobBuilder.min", function(){});
     return pub = {
       init: function(kb) {
         var success;
+        isApp = window.HTML5CAMERA.IS_EXTENSION;
         window.webkitStorageInfo.requestQuota(PERSISTENT, kb * 1024, function(grantedBytes) {
           return window.requestFileSystem(PERSISTENT, grantedBytes, success, errorHandler);
         });
@@ -3859,15 +3861,16 @@ define("mylibs/utils/BlobBuilder.min", function(){});
       },
       save: function(name, dataURI) {
         var blob;
-        if (window.HTML5CAMERA.IS_EXTENSION) {
+        if (isApp) {
           blob = utils.blobFromDataURI(dataURI);
-          return window.top.webkitPostMessage({
-            message: {
-              name: name,
-              image: blob
-            },
-            path: "/file/save"
-          }, "*");
+          return $.publish("/postman/deliver", [
+            {
+              message: {
+                name: name,
+                image: blob
+              }
+            }, "/file/save"
+          ]);
         } else {
           return fileSystem.root.getFile(name, {
             create: true
@@ -3886,6 +3889,17 @@ define("mylibs/utils/BlobBuilder.min", function(){});
         }
       },
       "delete": function(name) {
+        if (isApp) {
+          $.publish("/postman/deliver", [
+            {
+              message: {
+                name: name
+              }
+            }, "/file/destroy"
+          ]);
+        } else {
+
+        }
         return fileSystem.root.getFile(name, {
           create: false
         }, function(fileEntry) {
@@ -4035,18 +4049,16 @@ define("mylibs/utils/BlobBuilder.min", function(){});
         $.subscribe("/pictures/reload", function() {
           return pub.reload();
         });
-        return $.subscribe("/pictures/create", function(src, name, polaroid, save, animation, photoStrip) {
-          var $div, $img, callback, opacity;
+        return $.subscribe("/pictures/create", function(message) {
+          var $div, $img, callback;
           $div = $(picture);
-          $img = $div.find(".picture").attr("src", src).css("opacity", 1);
-          if (save) {
-            name = name || new Date().getTime() + ".png";
-            if (photoStrip) name = "p_" + name;
-            file.save(name, src);
-          }
+          $img = $div.find(".picture").attr("src", message.image).css("opacity", 1);
+          message.name = message.name || new Date().getTime() + ".png";
+          if (message.photoStrip) message.name = "p_" + message.name;
+          if (message.save) file.save(message.name, message.image);
           callback = function() {
             $img.attr("src", arguments[0]);
-            return file.save(name, arguments[0]);
+            return file.save(message.name, arguments[0]);
           };
           $img.on("click", function() {
             return $.publish("/customize", [this, callback]);
@@ -4055,23 +4067,36 @@ define("mylibs/utils/BlobBuilder.min", function(){});
           $img.load(function() {
             return $container.masonry("reload");
           });
-          if (polaroid) {
-            opacity = 0;
-            $.subscribe("/shake/beta", function() {
-              opacity = parseFloat($wrap.css("opacity"));
-              if (opacity < 1) {
-                opacity = opacity + .03;
-                return $img.css("opacity", opacity);
-              } else {
-                return $.unsubscribe("/shake/beta");
-              }
-            });
-          }
+          /*
+          				if polaroid
+          
+          					opacity = 0;
+          
+          					$.subscribe "/shake/beta", -> 
+          						opacity = parseFloat($wrap.css("opacity"))
+          						if opacity < 1
+          							opacity = opacity + .03
+          							$img.css("opacity", opacity)
+          						else 
+          							$.unsubscribe("/shake/beta")
+          */
           $div.on("click", ".download", function() {
             return file.download($img[0]);
           });
           $div.on("click", ".intent", function() {
-            return share.tweet($img.attr("src"));
+            var intent;
+            if (window.HTML5CAMERA) {
+              return $.publish("/postman/deliver", [
+                {
+                  message: {
+                    image: $img.attr("src")
+                  }
+                }, "/intents/share"
+              ]);
+            } else {
+              intent = new Intent("http://webintents.org/share", "image/*", $img.attr("src"));
+              return window.navigator.startActivity(intent, function(data) {});
+            }
           });
           $div.on("click", ".trash", function() {
             $.subscribe("/file/deleted/" + name, function() {
@@ -4114,7 +4139,14 @@ define("mylibs/utils/BlobBuilder.min", function(){});
         show: true,
         duration: 1000
       };
-      return $.publish("/pictures/create", [src, null, false, true, animation]);
+      return $.publish("/pictures/create", [
+        {
+          image: src,
+          name: null,
+          photoStrip: false,
+          save: true
+        }
+      ]);
     };
     develop = function(opacity) {
       if (opacity < 1) {
@@ -4214,27 +4246,14 @@ define("mylibs/utils/BlobBuilder.min", function(){});
           paused = false;
           video.width = canvas.width = width;
           video.height = canvas.height = height;
-          $header.kendoStop(true).kendoAnimate({
-            effects: "fadeIn",
-            show: true,
-            duration: 500
-          });
+          $header.stop().fadeIn(500);
           $preview.kendoStop(true).kendoAnimate({
             effects: "zoomIn fadeIn",
             show: true,
             duration: 500
           });
-          return $footer.kendoStop(true).kendoAnimate({
-            effects: "slideIn:up fadeIn",
-            show: true,
-            duration: 500,
-            complete: function() {
-              return $("footer").kendoStop(true).kendoAnimate({
-                effects: "fadeIn",
-                show: true,
-                duration: 200
-              });
-            }
+          return $footer.stop().fadeIn(500, function() {
+            return $("footer").stop().fadeIn(200);
           });
         });
         $container.find("#effects").click(function() {
@@ -4560,7 +4579,6 @@ define("mylibs/utils/BlobBuilder.min", function(){});
     var pub;
     return pub = {
       init: function() {
-        window.APP = {};
         postman.init();
         utils.init();
         $.subscribe('/camera/unsupported', function() {
@@ -4576,7 +4594,11 @@ define("mylibs/utils/BlobBuilder.min", function(){});
           customize.init("customize");
           pictures.init("pictures");
           file.init(5000);
-          return share.init();
+          return $.publish("/postman/deliver", [
+            {
+              message: ""
+            }, "/app/ready"
+          ]);
         });
       }
     };

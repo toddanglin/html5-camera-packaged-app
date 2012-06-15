@@ -43,54 +43,7 @@ define([
 
     $.publish("/msg/error", ["Access to the file system could not be obtained."])    
 
-  pub = 
-
-    init: (kb) ->
-
-      window.webkitStorageInfo.requestQuota PERSISTENT, kb * 1024, (grantedBytes) ->
-        
-        window.requestFileSystem PERSISTENT, grantedBytes, success, errorHandler
-
-      success = (fs) ->
-
-        console.log("Got File Access!")
-
-        fs.root.getDirectory "MyPictures", create: true, (dirEntry) ->
-
-          myPicturesDir = dirEntry
-
-          entries = []
-          dirReader = fs.root.createReader()
-          animation = effects: "zoomIn fadeIn", show: true, duration: 1000
-
-          read = ->
-
-            dirReader.readEntries (results) ->
-
-              if not results.length
-
-                entries.sort(compare)
-
-                for entry in entries
-                	$.publish "/postman/deliver", { message: { name: "entry.name", image: entry.toURL() } }, "/pictures/create", []
-
-              else
-
-                for entry in results
-
-                  if entry.isFile
-
-                    entries.push entry
-
-                read()
-
-          read()
-
-        , errorHandler
-
-        fileSystem = fs
-
-    save: (name, blob) ->
+  save = (name, blob) ->
 
         fileSystem.root.getFile name,  create: true, (fileEntry) ->
 
@@ -108,7 +61,7 @@ define([
                 
         , errorHandler
 
-    delete: (name) ->
+  destroy = (name) ->
 
       fileSystem.root.getFile name, create: false, (fileEntry) ->
 
@@ -120,30 +73,76 @@ define([
 
       , errorHandler
 
-    download: (img) ->
 
-      # gotta blow the image back up to it's correct size
-      width = img.width
-      height = img.height
+  read = ->
 
-      img.removeAttribute("width", 0) 
-      img.removeAttribute("height", 0)
+    window.webkitStorageInfo.requestQuota PERSISTENT, 5000 * 1024, (grantedBytes) ->
+        
+        window.requestFileSystem PERSISTENT, grantedBytes, success, errorHandler
 
-      canvas = document.createElement("canvas")
-      ctx = canvas.getContext("2d")
+    success = (fs) ->
 
-      canvas.width = img.width
-      canvas.height = img.height
+      console.log("Got File Access!")
 
-      ctx.drawImage(img, 0, 0, img.width, img.height)
+      fs.root.getDirectory "MyPictures", create: true, (dirEntry) ->
 
-      dataURL = canvas.toDataURL();
+        myPicturesDir = dirEntry
 
-      img.width = width
-      img.height = height
+        entries = []
+        dirReader = fs.root.createReader()
+        animation = effects: "zoomIn fadeIn", show: true, duration: 1000
 
-      blob = utils.blobFromDataURI(dataURL)
+        read = ->
 
-      saveAs(blob)
+          dirReader.readEntries (results) ->
+
+            if not results.length
+
+              entries.sort(compare)
+
+              for entry in entries
+
+                do ->
+                  
+                  img = new Image()
+                  img.src = entry.toURL()
+                  
+                  img.onload = ->
+
+                    dataURL = img.toDataURL()
+
+                    $.publish "/postman/deliver", [ { message: { name: entry.name, image: dataURL } }, "/pictures/create", [] ]
+
+            else
+
+              for entry in results
+
+                if entry.isFile
+
+                  entries.push entry
+
+              read()
+
+        read()
+
+      , errorHandler
+
+      fileSystem = fs
+
+  pub = 
+
+    init: (kb) ->
+
+      # subscribe to events
+      $.subscribe "/file/save", (message) ->
+        save message.name, message.image
+
+      $.subscribe "/file/delete", (message) ->
+        destroy message.name
+
+      $.subscribe "/file/read", (message) ->
+        read()
+
+      
 
 )

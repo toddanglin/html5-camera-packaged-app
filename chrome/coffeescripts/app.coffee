@@ -38,13 +38,23 @@ define([
 	pub = 
 		init: ->
 
+			# initialize utils
+			utils.init()
+
 			# cue up the postman!
 			postman.init(iframe)
 
 			# get the files
 			file.init()
 
-			navigator.webkitGetUserMedia { video: true }, hollaback, errback
+			# subscribe to events
+			$.subscribe "/app/ready", ->
+
+				# get the currently saved files
+				$.publish "/file/read", []
+
+				# start the camera
+				navigator.webkitGetUserMedia { video: true }, hollaback, errback
 
 			
 )
