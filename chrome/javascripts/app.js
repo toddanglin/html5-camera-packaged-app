@@ -18,9 +18,9 @@
       return $.publish("/postman/deliver", [
         {
           message: {
-            image: img.data
+            image: img.data.buffer
           }
-        }, "/camera/update"
+        }, "/camera/update", [buffer]
       ]);
     };
     hollaback = function(stream) {

@@ -72,7 +72,7 @@ define([
                 entries.sort(compare)
 
                 for entry in entries
-                	$.publish "/postman/deliver", { message: { name: "entry.name", image: entry.toURL() } }, "/pictures/create" 
+                	$.publish "/postman/deliver", { message: { name: "entry.name", image: entry.toURL() } }, "/pictures/create", []
 
               else
 

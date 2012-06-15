@@ -4472,12 +4472,11 @@ define("mylibs/utils/BlobBuilder.min", function(){});
       if (window.HTML5CAMERA.IS_EXTENSION) {
         window.HTML5CAMERA.canvas = canvas;
         $.subscribe("/camera/update", function(message) {
-          var imgData;
-          if (message.address === "/camera/update") {
-            imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            imgData.data.set(message.image);
-            return ctx.putImageData(imgData, 0, 0);
-          }
+          var imgData, videoData;
+          imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          videoData = new Uint8ClampedArray(message.image);
+          imgData.data.set(videoData);
+          return ctx.putImageData(imgData, 0, 0);
         });
         return callback();
       } else {
@@ -4543,12 +4542,10 @@ define("mylibs/utils/BlobBuilder.min", function(){});
     return pub = {
       init: function() {
         window.onmessage = function(event) {
-          if (event.data.message.address === "/camera/update") {
-            return $.publish("/camera/update", [event.data.message]);
-          }
+          return $.publish(event.data.address, [event.data.message]);
         };
         return $.subscribe("/postman/deliver", function(message, address) {
-          message.message.address = address;
+          message.address = address;
           return window.top.webkitPostMessage(message, "*");
         });
       }

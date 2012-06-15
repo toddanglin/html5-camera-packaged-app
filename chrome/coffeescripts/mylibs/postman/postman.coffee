@@ -20,8 +20,8 @@ define([
 						file.save event.data.message.name, event.data.message.image
 
 			# subscribe to the send event
-			$.subscribe "/postman/deliver", (message, address) ->
+			$.subscribe "/postman/deliver", (message, address, block) ->
 			
-				message.message.address = address
-				recipient.contentWindow.webkitPostMessage message, "*"
+				message.address = address
+				recipient.contentWindow.webkitPostMessage message, "*", block
 )

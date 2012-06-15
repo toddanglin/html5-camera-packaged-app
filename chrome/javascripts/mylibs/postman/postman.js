@@ -11,9 +11,9 @@
             return file.save(event.data.message.name, event.data.message.image);
           }
         };
-        return $.subscribe("/postman/deliver", function(message, address) {
-          message.message.address = address;
-          return recipient.contentWindow.webkitPostMessage(message, "*");
+        return $.subscribe("/postman/deliver", function(message, address, block) {
+          message.address = address;
+          return recipient.contentWindow.webkitPostMessage(message, "*", block);
         });
       }
     };

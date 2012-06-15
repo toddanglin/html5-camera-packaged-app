@@ -21,7 +21,7 @@ define([
 		img = ctx.getImageData(0, 0, canvas.width, canvas.height)
 		buffer = img.data.buffer
 
-		$.publish "/postman/deliver", [{ message: { image: img.data } }, "/camera/update"]
+		$.publish "/postman/deliver", [{ message: { image: img.data.buffer } }, "/camera/update", [ buffer ]]
 
 	hollaback = (stream) ->
 

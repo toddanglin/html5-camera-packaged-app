@@ -69,7 +69,7 @@
                         name: "entry.name",
                         image: entry.toURL()
                       }
-                    }, "/pictures/create"));
+                    }, "/pictures/create", []));
                   }
                   return _results;
                 } else {
