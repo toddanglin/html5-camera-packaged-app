@@ -1,12 +1,13 @@
 {
  "name": "HTML5 Camera",
- "description": "Test",
+ "description": "A PhotoBooth Application For Chrome",
  "version": "1.0",
  "manifest_version": 2,
  "offline_enabled" : true,
- "platform_app": true,
- "background": {
+ "app": {
+  "background": {
     "scripts": ["background.js"]
+  }
  },
  "icons": {
    "16": "icon_16.png",
@@ -14,8 +15,10 @@
  },
  "permissions": [
    "experimental",
-   "windows",
-   "unlimitedStorage"
+   "unlimitedStorage",
+   "appWindow",
+   "videoCapture",
+   "fileSystem"
  ],
  "intents": {
     "http://webintents.org/pick": [
@@ -26,7 +29,7 @@
         "disposition" : "window"
       }]
   },
-  "sandboxed_pages": {
-    "pages": [ "index.html" ]
+  "sandbox": {
+    "pages": [ "chrome/app/index.html" ]
   }
 }
